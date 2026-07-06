@@ -1,10 +1,27 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "General Chat";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="chat-shell">
+    <header class="chat-header">
+        <div>
+            <p class="chat-eyebrow">General room</p>
+            <h1>Stock Challenge Chat</h1>
+        </div>
+        <p class="chat-user">@User.Identity?.Name</p>
+    </header>
+
+    <div id="messagesList" class="chat-messages" aria-live="polite"></div>
+
+    <form id="messageForm" class="chat-composer">
+        <input id="messageInput" class="form-control" maxlength="1000" autocomplete="off" placeholder="Write a message or /stock=aapl.us" />
+        <button class="btn btn-primary" type="submit">Send</button>
+    </form>
+</section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@10.0.0/dist/browser/signalr.min.js"></script>
+    <script src="~/js/chat.js" asp-append-version="true"></script>
+}

@@ -40,9 +40,13 @@ button.accept-policy {
 }
 
 .footer {
-  position: absolute;
-  bottom: 0;
+  position: static;
   width: 100%;
   white-space: nowrap;
   line-height: 60px;
+}
+
+/* Reserve space at the bottom so fixed-height footers don't overlap content */
+body {
+  padding-bottom: 72px;
 }
