@@ -20,4 +20,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Jobsity.StockChallenge.Bot\Jobsity.StockChallenge.Bot.csproj" />
+  </ItemGroup>
+
 </Project>
