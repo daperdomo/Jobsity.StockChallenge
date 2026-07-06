@@ -1,3 +1,10 @@
 <Solution>
+  <Folder Name="/Tests/">
+    <Project Path="Jobsity.StockChallenge.Tests/Jobsity.StockChallenge.Tests.csproj" />
+  </Folder>
+  <Project Path="Jobsity.StockChallenge.Application/Jobsity.StockChallenge.Application.csproj" />
+  <Project Path="Jobsity.StockChallenge.Bot/Jobsity.StockChallenge.Bot.csproj" />
+  <Project Path="Jobsity.StockChallenge.Domain/Jobsity.StockChallenge.Domain.csproj" />
+  <Project Path="Jobsity.StockChallenge.Infrastructure/Jobsity.StockChallenge.Infrastructure.csproj" />
   <Project Path="Jobsity.StockChallenge/Jobsity.StockChallenge.csproj" />
 </Solution>
