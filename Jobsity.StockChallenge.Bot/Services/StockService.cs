@@ -40,7 +40,7 @@ namespace Jobsity.StockChallenge.Bot.Services
 
             var cleanSymbol = stockSymbol.Trim().ToUpperInvariant();
 
-            // Stooq usa AAPL.US, pero Alpha Vantage usa AAPL para acciones USA.
+            // Stooq accepts AAPL.US, while Alpha Vantage expects AAPL for US symbols.
             if (cleanSymbol.EndsWith(".US", StringComparison.OrdinalIgnoreCase))
                 cleanSymbol = cleanSymbol[..^3];
 

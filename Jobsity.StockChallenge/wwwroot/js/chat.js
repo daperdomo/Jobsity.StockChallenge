@@ -2,6 +2,8 @@
     const messagesList = document.getElementById("messagesList");
     const messageForm = document.getElementById("messageForm");
     const messageInput = document.getElementById("messageInput");
+    const roomTabs = Array.from(document.querySelectorAll(".chat-room-tab"));
+    let currentRoom = roomTabs.find(tab => tab.classList.contains("active"))?.dataset.room || "General";
 
     function appendMessage(sender, text, timestamp) {
         const item = document.createElement("article");
@@ -32,17 +34,37 @@
         .withAutomaticReconnect()
         .build();
 
-    connection.on("LoadMessages", function (messages) {
+    function setActiveRoom(room) {
+        currentRoom = room;
+        roomTabs.forEach(tab => {
+            tab.classList.toggle("active", tab.dataset.room === room);
+        });
+    }
+
+    async function joinRoom(room) {
+        setActiveRoom(room);
+        await connection.invoke("JoinRoom", room);
+    }
+
+    connection.on("LoadMessages", function (room, messages) {
+        setActiveRoom(room);
         messagesList.innerHTML = "";
         messages.forEach(message => {
-            const sender = message.sender || message.senderUserName || message.SenderUserName || "";
-            const text = message.text || message.message || message.Message || "";
-            const timestamp = message.timestamp || message.Timestamp || new Date();
-            appendMessage(sender, text, timestamp);
+            appendMessage(message.senderUserName, message.message, message.timestamp);
         });
     });
 
     connection.on("ReceiveMessage", appendMessage);
+
+    roomTabs.forEach(tab => {
+        tab.addEventListener("click", async function () {
+            if (tab.dataset.room === currentRoom) {
+                return;
+            }
+
+            await joinRoom(tab.dataset.room);
+        });
+    });
 
     messageForm.addEventListener("submit", async function (event) {
         event.preventDefault();
@@ -53,11 +75,14 @@
         }
 
         messageInput.value = "";
-        await connection.invoke("SendMessage", message);
+        await connection.invoke("SendMessage", message, currentRoom);
     });
 
-    connection.start().catch(function (error) {
-        appendMessage("System", "The chat connection could not be started.", new Date());
-        console.error(error);
-    });
+    connection
+        .start()
+        .then(() => joinRoom(currentRoom))
+        .catch(function (error) {
+            appendMessage("System", "The chat connection could not be started.", new Date());
+            console.error(error);
+        });
 })();

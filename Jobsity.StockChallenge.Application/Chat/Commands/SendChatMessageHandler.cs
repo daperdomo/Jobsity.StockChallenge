@@ -21,6 +21,7 @@ namespace Jobsity.StockChallenge.Application.Chat.Commands
         public async Task<SendChatMessageResult> HandleAsync(SendChatMessageCommand command, CancellationToken cancellationToken = default)
         {
             var text = command.Message.Trim();
+            var chatRoom = ChatRooms.Normalize(command.ChatRoom);
             var isStockCommand = IsStockCommand(text);
             var chatMessage = new ChatMessage
             {
@@ -29,7 +30,7 @@ namespace Jobsity.StockChallenge.Application.Chat.Commands
                 SenderUserName = command.SenderUserName,
                 Message = text,
                 Timestamp = DateTime.UtcNow,
-                ChatRoom = ChatRooms.General
+                ChatRoom = chatRoom
             };
 
             if (!isStockCommand)
@@ -45,7 +46,7 @@ namespace Jobsity.StockChallenge.Application.Chat.Commands
                 {
                     try
                     {
-                        await _stockQuoteRequestPublisher.RequestStockQuoteAsync(stockSymbol, cancellationToken);
+                        await _stockQuoteRequestPublisher.RequestStockQuoteAsync(stockSymbol, chatRoom, cancellationToken);
                     }
                     catch
                     {
@@ -64,7 +65,7 @@ namespace Jobsity.StockChallenge.Application.Chat.Commands
 
         private static ChatMessageDto ToDto(ChatMessage message)
         {
-            return new ChatMessageDto(message.SenderUserName, message.Message, message.Timestamp);
+            return new ChatMessageDto(message.SenderUserName, message.Message, message.Timestamp, message.ChatRoom);
         }
     }
 }

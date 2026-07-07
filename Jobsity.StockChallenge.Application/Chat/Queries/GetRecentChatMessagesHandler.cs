@@ -13,7 +13,7 @@ namespace Jobsity.StockChallenge.Application.Chat.Queries
         {
             var messages = await _chatMessageRepository.GetRecentAsync(query.ChatRoom, query.Count, cancellationToken);
             return messages
-                .Select(message => new ChatMessageDto(message.SenderUserName, message.Message, message.Timestamp))
+                .Select(message => new ChatMessageDto(message.SenderUserName, message.Message, message.Timestamp, message.ChatRoom))
                 .ToList();
         }
     }

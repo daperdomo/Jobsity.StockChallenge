@@ -1,6 +1,8 @@
 using System.Text;
+using System.Text.Json;
 using Jobsity.StockChallenge.Application.Chat;
 using Jobsity.StockChallenge.Application.Chat.Commands;
+using Jobsity.StockChallenge.Application.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -74,13 +76,16 @@ namespace Jobsity.StockChallenge.Infrastructure.Messaging
         {
             try
             {
-                var botText = Encoding.UTF8.GetString(args.Body.Span);
+                var botResponse = GetBotResponse(Encoding.UTF8.GetString(args.Body.Span));
 
                 using var scope = _scopeFactory.CreateScope();
                 var saveBotMessageHandler = scope.ServiceProvider.GetRequiredService<ISaveBotMessageHandler>();
                 var notificationService = scope.ServiceProvider.GetRequiredService<IChatNotificationService>();
 
-                var message = await saveBotMessageHandler.HandleAsync(new SaveBotMessageCommand(botText), stoppingToken);
+                var message = await saveBotMessageHandler.HandleAsync(
+                    new SaveBotMessageCommand(botResponse.Message, botResponse.ChatRoom),
+                    stoppingToken);
+
                 await notificationService.NotifyMessageAsync(message, stoppingToken);
 
                 await channel.BasicAckAsync(args.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
@@ -91,5 +96,28 @@ namespace Jobsity.StockChallenge.Infrastructure.Messaging
                 await channel.BasicNackAsync(args.DeliveryTag, multiple: false, requeue: true, cancellationToken: stoppingToken);
             }
         }
+
+        private static BotResponse GetBotResponse(string body)
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(body);
+                var root = document.RootElement;
+                var message = root.TryGetProperty("message", out var messageProperty)
+                    ? messageProperty.GetString() ?? string.Empty
+                    : body;
+                var chatRoom = root.TryGetProperty("chatRoom", out var chatRoomProperty)
+                    ? chatRoomProperty.GetString()
+                    : ChatRooms.General;
+
+                return new BotResponse(message, ChatRooms.Normalize(chatRoom));
+            }
+            catch (JsonException)
+            {
+                return new BotResponse(body, ChatRooms.General);
+            }
+        }
+
+        private sealed record BotResponse(string Message, string ChatRoom);
     }
 }

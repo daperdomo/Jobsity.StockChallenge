@@ -21,16 +21,24 @@ namespace Jobsity.StockChallenge.Hubs
             _sendChatMessageHandler = sendChatMessageHandler;
         }
 
-        public override async Task OnConnectedAsync()
+        public async Task JoinRoom(string chatRoom)
         {
-            var history = await _getRecentChatMessagesHandler.HandleAsync(
-                new GetRecentChatMessagesQuery(ChatRooms.General, 50));
+            var normalizedRoom = ChatRooms.Normalize(chatRoom);
+            if (Context.Items.TryGetValue("ChatRoom", out var currentRoom) && currentRoom is string previousRoom)
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, previousRoom);
+            }
 
-            await Clients.Caller.SendAsync("LoadMessages", history);
-            await base.OnConnectedAsync();
+            Context.Items["ChatRoom"] = normalizedRoom;
+            await Groups.AddToGroupAsync(Context.ConnectionId, normalizedRoom);
+
+            var history = await _getRecentChatMessagesHandler.HandleAsync(
+                new GetRecentChatMessagesQuery(normalizedRoom, 50));
+
+            await Clients.Caller.SendAsync("LoadMessages", normalizedRoom, history);
         }
 
-        public async Task SendMessage(string message)
+        public async Task SendMessage(string message, string chatRoom)
         {
             message = message.Trim();
             if (string.IsNullOrWhiteSpace(message))
@@ -40,9 +48,10 @@ namespace Jobsity.StockChallenge.Hubs
 
             var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
             var userName = Context.User?.Identity?.Name ?? "User";
-            var result = await _sendChatMessageHandler.HandleAsync(new SendChatMessageCommand(userId, userName, message));
+            var normalizedRoom = ChatRooms.Normalize(chatRoom);
+            var result = await _sendChatMessageHandler.HandleAsync(new SendChatMessageCommand(userId, userName, message, normalizedRoom));
 
-            await Clients.All.SendAsync(
+            await Clients.Group(normalizedRoom).SendAsync(
                 "ReceiveMessage",
                 result.Message.SenderUserName,
                 result.Message.Message,

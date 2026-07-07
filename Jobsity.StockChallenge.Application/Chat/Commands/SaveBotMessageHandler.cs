@@ -14,6 +14,7 @@ namespace Jobsity.StockChallenge.Application.Chat.Commands
 
         public async Task<ChatMessageDto> HandleAsync(SaveBotMessageCommand command, CancellationToken cancellationToken = default)
         {
+            var chatRoom = ChatRooms.Normalize(command.ChatRoom);
             var chatMessage = new ChatMessage
             {
                 Id = Guid.NewGuid(),
@@ -21,10 +22,10 @@ namespace Jobsity.StockChallenge.Application.Chat.Commands
                 SenderUserName = "Stock Bot",
                 Message = command.Message,
                 Timestamp = DateTime.UtcNow,
-                ChatRoom = ChatRooms.General
+                ChatRoom = chatRoom
             };
 
-            return new ChatMessageDto(chatMessage.SenderUserName, chatMessage.Message, chatMessage.Timestamp);
+            return new ChatMessageDto(chatMessage.SenderUserName, chatMessage.Message, chatMessage.Timestamp, chatMessage.ChatRoom);
         }
     }
 }

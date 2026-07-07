@@ -72,12 +72,17 @@ namespace Jobsity.StockChallenge.Bot
 
                 try
                 {
-                    var stockSymbol = GetStockSymbol(Encoding.UTF8.GetString(args.Body.Span));
-                    var response = await _stockService.GetStockQuoteFromAlphaVantage(stockSymbol);
+                    var command = GetStockCommand(Encoding.UTF8.GetString(args.Body.Span));
+                    var response = await _stockService.GetStockQuoteFromAlphaVantage(command.StockSymbol);
+                    var payload = JsonSerializer.Serialize(new
+                    {
+                        message = response,
+                        chatRoom = command.ChatRoom
+                    });
 
                     var properties = new BasicProperties
                     {
-                        ContentType = "text/plain",
+                        ContentType = "application/json",
                         DeliveryMode = DeliveryModes.Persistent,
                         CorrelationId = args.BasicProperties.CorrelationId
                     };
@@ -87,7 +92,7 @@ namespace Jobsity.StockChallenge.Bot
                         routingKey: responseTarget,
                         mandatory: false,
                         basicProperties: properties,
-                        body: Encoding.UTF8.GetBytes(response),
+                        body: Encoding.UTF8.GetBytes(payload),
                         cancellationToken: stoppingToken);
 
                     await channel.BasicAckAsync(args.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
@@ -108,10 +113,18 @@ namespace Jobsity.StockChallenge.Bot
             await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
         }
 
-        private static string GetStockSymbol(string body)
+        private static StockCommand GetStockCommand(string body)
         {
             using var document = JsonDocument.Parse(body);
-            return document.RootElement.GetProperty("message").GetString() ?? string.Empty;
+            var root = document.RootElement;
+            var stockSymbol = root.GetProperty("message").GetString() ?? string.Empty;
+            var chatRoom = root.TryGetProperty("chatRoom", out var chatRoomProperty)
+                ? chatRoomProperty.GetString() ?? "General"
+                : "General";
+
+            return new StockCommand(stockSymbol, chatRoom);
         }
+
+        private sealed record StockCommand(string StockSymbol, string ChatRoom);
     }
 }

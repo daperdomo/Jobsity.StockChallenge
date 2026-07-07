@@ -1,17 +1,27 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "General Chat";
+    ViewData["Title"] = "Chat";
+    var rooms = Jobsity.StockChallenge.Application.Common.ChatRooms.All;
 }
 
 <section class="chat-shell">
     <header class="chat-header">
         <div>
-            <p class="chat-eyebrow">General room</p>
+            <p class="chat-eyebrow">Chat rooms</p>
             <h1>Stock Challenge Chat</h1>
         </div>
         <p class="chat-user">@User.Identity?.Name</p>
     </header>
+
+    <nav class="chat-room-tabs" aria-label="Chat rooms">
+        @foreach (var room in rooms)
+        {
+            <button class="chat-room-tab @(room == rooms[0] ? "active" : string.Empty)" type="button" data-room="@room">
+                @room
+            </button>
+        }
+    </nav>
 
     <div id="messagesList" class="chat-messages" aria-live="polite"></div>
 

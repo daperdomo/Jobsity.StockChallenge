@@ -33,7 +33,7 @@ body {
 
 .chat-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   flex: 1 1 auto;
   gap: 1rem;
   min-height: min(680px, calc(100vh - 180px));
@@ -55,6 +55,27 @@ body {
 .chat-user {
   margin: 0;
   color: #667085;
+}
+
+.chat-room-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.chat-room-tab {
+  padding: .45rem .85rem;
+  border: 1px solid #d0d5dd;
+  border-radius: 999px;
+  background: #fff;
+  color: #344054;
+  font-weight: 600;
+}
+
+.chat-room-tab.active {
+  border-color: #1b6ec2;
+  background: #1b6ec2;
+  color: #fff;
 }
 
 .chat-messages {

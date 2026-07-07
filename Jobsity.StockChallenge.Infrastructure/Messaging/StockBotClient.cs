@@ -15,7 +15,7 @@ namespace Jobsity.StockChallenge.Infrastructure.Messaging
             _configuration = configuration;
         }
 
-        public async Task RequestStockQuoteAsync(string stockSymbol, CancellationToken cancellationToken = default)
+        public async Task RequestStockQuoteAsync(string stockSymbol, string chatRoom, CancellationToken cancellationToken = default)
         {
             var queueName = _configuration["RabbitMq:requestQueue"] ?? "stock.commands";
             var factory = CreateConnectionFactory();
@@ -25,7 +25,7 @@ namespace Jobsity.StockChallenge.Infrastructure.Messaging
 
             await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false, cancellationToken: cancellationToken);
 
-            var payload = JsonSerializer.Serialize(new { message = stockSymbol });
+            var payload = JsonSerializer.Serialize(new { message = stockSymbol, chatRoom });
             var properties = new BasicProperties
             {
                 ContentType = "application/json",

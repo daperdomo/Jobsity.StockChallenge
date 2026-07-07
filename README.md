@@ -1,23 +1,22 @@
 # Jobsity.StockChallenge
 
-Chat application for stock quote lookups. The web app publishes stock commands to RabbitMQ, the bot consumes those commands, fetches the quote, and publishes the response back to the chat.
+A small ASP.NET Core chat app with stock quote support. Messages go through SignalR, stock commands go through RabbitMQ, and chat history is stored in SQL Server.
 
 ## Requirements
 
 - Docker Desktop
-- Docker Compose included with Docker Desktop
 - Linux containers enabled in Docker Desktop
 
-To verify Docker is ready:
+Check Docker before running the app:
 
 ```powershell
 docker version
 docker compose version
 ```
 
-`docker version` should show both `Client` and `Server` information.
+`docker version` should include a `Server` section. If it does not, Docker Desktop is not ready yet.
 
-## Run With Docker
+## Run
 
 From the repository root:
 
@@ -25,48 +24,46 @@ From the repository root:
 docker compose up --build
 ```
 
-This starts:
+Compose starts four containers:
 
-- `web`: ASP.NET Core site at `http://localhost:8080`
-- `bot`: worker that processes stock commands
-- `rabbitmq`: message broker
-- `sqlserver`: SQL Server database
+- `web`
+- `bot`
+- `rabbitmq`
+- `sqlserver`
 
-The database is created automatically when the site starts by running the Entity Framework migrations.
+The web app runs the EF migrations on startup, so the database is created automatically.
 
 ## URLs
 
-- Site: `http://localhost:8080`
-- RabbitMQ Management: `http://localhost:15672`
-- RabbitMQ username: `guest`
-- RabbitMQ password: `guest`
+- App: `http://localhost:8080`
+- RabbitMQ UI: `http://localhost:15672`
+- RabbitMQ login: `guest` / `guest`
 - SQL Server: `localhost,1433`
-- SQL Server username: `sa`
-- Default SQL Server password: `Jobsity_StockChallenge_2026!`
+- SQL Server login: `sa` / `Jobsity_StockChallenge_2026!`
 
 ## Configuration
 
-The [docker-compose.yml](docker-compose.yml) file configures all services using environment variables.
-
-To change the SQL Server password:
+The default SQL Server password can be changed before starting Compose:
 
 ```powershell
 $env:SQL_SERVER_PASSWORD="TuPasswordSeguro_123!"
 docker compose up --build
 ```
 
-## Chat Usage
+The password must satisfy SQL Server password complexity rules.
+
+## Chat usage
 
 1. Open `http://localhost:8080`.
 2. Register or log in.
-3. Send a regular message or a stock command:
+3. Send a message or a stock command:
 
 ```text
 /stock=aapl.us
 ```
 
-The bot replies in the chat with the fetched quote.
+The bot posts the quote back to the same chat room.
 
-If SQL Server does not start, check that the password satisfies complexity rules and that port `1433` is not already in use.
+If SQL Server does not start, check that the password satisfies complexity rules and that port `1433` is free.
 
-If RabbitMQ does not start, check that ports `5672` and `15672` are not already in use.
+If RabbitMQ does not start, check that ports `5672` and `15672` are free.

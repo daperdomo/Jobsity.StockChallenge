@@ -1,4 +1,4 @@
 namespace Jobsity.StockChallenge.Application.Chat.Commands
 {
-    public record SaveBotMessageCommand(string Message);
+    public record SaveBotMessageCommand(string Message, string ChatRoom);
 }

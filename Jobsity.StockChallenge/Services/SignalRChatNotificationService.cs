@@ -15,7 +15,7 @@ namespace Jobsity.StockChallenge.Services
 
         public async Task NotifyMessageAsync(ChatMessageDto message, CancellationToken cancellationToken = default)
         {
-            await _hubContext.Clients.All.SendAsync(
+            await _hubContext.Clients.Group(message.ChatRoom).SendAsync(
                 "ReceiveMessage",
                 message.SenderUserName,
                 message.Message,
