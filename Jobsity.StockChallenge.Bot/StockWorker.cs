@@ -27,9 +27,28 @@ namespace Jobsity.StockChallenge.Bot
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await ListenForRequestsAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Stock bot is stopping.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Could not connect to the stock command queue. Retrying soon.");
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                }
+            }
+        }
+
+        private async Task ListenForRequestsAsync(CancellationToken stoppingToken)
+        {
             var requestQueue = _configuration["RabbitMq:requestQueue"] ?? "stock.commands";
             var responseQueue = _configuration["RabbitMq:responseQueue"] ?? "chat.messages";
-
             var factory = new ConnectionFactory
             {
                 HostName = _configuration["RabbitMq:host"] ?? "localhost",
@@ -86,14 +105,7 @@ namespace Jobsity.StockChallenge.Bot
                 requestQueue,
                 responseQueue);
 
-            try
-            {
-                await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                _logger.LogInformation("Stock bot is stopping.");
-            }
+            await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
         }
 
         private static string GetStockSymbol(string body)

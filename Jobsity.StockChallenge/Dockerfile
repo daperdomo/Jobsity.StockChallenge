@@ -1,32 +1,42 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
-# For more information, please see https://aka.ms/containercompat
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-nanoserver-ltsc2022 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
 
-
-# This stage is used to build the service project
-FROM mcr.microsoft.com/dotnet/sdk:10.0-nanoserver-ltsc2022 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
 COPY ["Jobsity.StockChallenge/Jobsity.StockChallenge.csproj", "Jobsity.StockChallenge/"]
-RUN dotnet restore "./Jobsity.StockChallenge/Jobsity.StockChallenge.csproj"
+COPY ["Jobsity.StockChallenge.Bot/Jobsity.StockChallenge.Bot.csproj", "Jobsity.StockChallenge.Bot/"]
+COPY ["Jobsity.StockChallenge.Application/Jobsity.StockChallenge.Application.csproj", "Jobsity.StockChallenge.Application/"]
+COPY ["Jobsity.StockChallenge.Domain/Jobsity.StockChallenge.Domain.csproj", "Jobsity.StockChallenge.Domain/"]
+COPY ["Jobsity.StockChallenge.Infrastructure/Jobsity.StockChallenge.Infrastructure.csproj", "Jobsity.StockChallenge.Infrastructure/"]
+
+RUN dotnet restore "Jobsity.StockChallenge/Jobsity.StockChallenge.csproj"
+RUN dotnet restore "Jobsity.StockChallenge.Bot/Jobsity.StockChallenge.Bot.csproj"
+
 COPY . .
-WORKDIR "/src/Jobsity.StockChallenge"
-RUN dotnet build "./Jobsity.StockChallenge.csproj" -c %BUILD_CONFIGURATION% -o /app/build
 
-# This stage is used to publish the service project to be copied to the final stage
-FROM build AS publish
+FROM build AS publish-web
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Jobsity.StockChallenge.csproj" -c %BUILD_CONFIGURATION% -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Jobsity.StockChallenge/Jobsity.StockChallenge.csproj" \
+    -c "$BUILD_CONFIGURATION" \
+    -o /app/publish/web \
+    /p:UseAppHost=false
 
-# This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
-FROM base AS final
+FROM build AS publish-bot
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "Jobsity.StockChallenge.Bot/Jobsity.StockChallenge.Bot.csproj" \
+    -c "$BUILD_CONFIGURATION" \
+    -o /app/publish/bot \
+    /p:UseAppHost=false
+
+FROM runtime AS web
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=publish-web /app/publish/web .
 ENTRYPOINT ["dotnet", "Jobsity.StockChallenge.dll"]
+
+FROM runtime AS bot
+WORKDIR /app
+COPY --from=publish-bot /app/publish/bot .
+ENTRYPOINT ["dotnet", "Jobsity.StockChallenge.Bot.dll"]
