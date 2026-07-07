@@ -33,37 +33,40 @@ namespace Jobsity.StockChallenge.Bot.Services
             return message;
         }
 
-        public async Task<string> GetStockQuoteFromHistory(string stockSymbol)
+        public async Task<string> GetStockQuoteFromAlphaVantage(string stockSymbol)
         {
             if (string.IsNullOrWhiteSpace(stockSymbol))
                 throw new ArgumentException("Stock symbol is required", nameof(stockSymbol));
 
-            var cleanSymbol = stockSymbol.Trim().ToLowerInvariant();
-            var displaySymbol = cleanSymbol.ToUpperInvariant();
+            var cleanSymbol = stockSymbol.Trim().ToUpperInvariant();
 
-            var toDate = DateTime.UtcNow.Date;
-            var fromDate = toDate.AddDays(-7);
+            // Stooq usa AAPL.US, pero Alpha Vantage usa AAPL para acciones USA.
+            if (cleanSymbol.EndsWith(".US", StringComparison.OrdinalIgnoreCase))
+                cleanSymbol = cleanSymbol[..^3];
 
-            var d1 = fromDate.ToString("yyyyMMdd");
-            var d2 = toDate.ToString("yyyyMMdd");
+            var apiKey = _configuration["AlphaVantage:ApiKey"];
 
-            string serviceUrl = _configuration["StockService:HistoryUrl"]
-                ?? "https://stooq.com/q/d/l/?s={stockSymbol}&i=d&d1={d1}&d2={d2}";
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Alpha Vantage API key is missing. Please add AlphaVantage:ApiKey to appsettings.json in the Bot project.");
+
+            var serviceUrl = _configuration["AlphaVantage:QuoteUrl"]
+                ?? "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stockSymbol}&apikey={apiKey}&datatype=csv";
 
             var url = serviceUrl
                 .Replace("{stockSymbol}", Uri.EscapeDataString(cleanSymbol))
-                .Replace("{d1}", d1)
-                .Replace("{d2}", d2);
+                .Replace("{apiKey}", Uri.EscapeDataString(apiKey));
 
             var csv = await FetchStringAsync(url);
 
             if (string.IsNullOrWhiteSpace(csv))
-                return $"{displaySymbol} quote is not available right now";
+                return $"{cleanSymbol} quote is not available right now";
 
-            if (csv.Contains("Access denied", StringComparison.OrdinalIgnoreCase) ||
+            if (csv.Contains("Error Message", StringComparison.OrdinalIgnoreCase) ||
+                csv.Contains("Information", StringComparison.OrdinalIgnoreCase) ||
+                csv.Contains("Thank you for using Alpha Vantage", StringComparison.OrdinalIgnoreCase) ||
                 csv.Contains("<html", StringComparison.OrdinalIgnoreCase))
             {
-                return $"{displaySymbol} quote is not available right now";
+                return $"{cleanSymbol} quote is not available right now";
             }
 
             var lines = csv.Split(
@@ -72,25 +75,21 @@ namespace Jobsity.StockChallenge.Bot.Services
             );
 
             if (lines.Length < 2)
-                return $"{displaySymbol} quote is not available right now";
+                return $"{cleanSymbol} quote is not available right now";
 
-            // Historical CSV format:
-            // Date,Open,High,Low,Close,Volume
-            var lastRecord = lines[^1];
-            var cols = lastRecord.Split(',');
+            // Expected Alpha Vantage GLOBAL_QUOTE CSV:
+            // symbol,open,high,low,price,volume,latestDay,previousClose,change,changePercent
+            var cols = lines[1].Split(',');
 
             if (cols.Length < 5)
-                return $"{displaySymbol} quote is not available right now";
+                return $"{cleanSymbol} quote is not available right now";
 
-            var date = cols[0].Trim();
-            var close = cols[4].Trim();
+            var symbol = cols[0].Trim().ToUpperInvariant();
+            var price = cols[4].Trim();
 
-            string message = close.Equals("N/D", StringComparison.OrdinalIgnoreCase) ||
-                             string.IsNullOrWhiteSpace(close)
-                ? $"{displaySymbol} quote is not available right now"
-                : $"{displaySymbol} quote is ${close} per share";
-
-            return message;
+            return string.IsNullOrWhiteSpace(price) || price.Equals("N/D", StringComparison.OrdinalIgnoreCase)
+                ? $"{symbol} quote is not available right now"
+                : $"{symbol} quote is ${price} per share";
         }
 
         protected virtual async Task<string> FetchStringAsync(string url)

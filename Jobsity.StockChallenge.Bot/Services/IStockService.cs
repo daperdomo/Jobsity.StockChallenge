@@ -3,6 +3,6 @@
     public interface IStockService
     {
         Task<string> GetStockQuote(string stockSymbol);
-        Task<string> GetStockQuoteFromHistory(string stockSymbol);
+        Task<string> GetStockQuoteFromAlphaVantage(string stockSymbol);
     }
 }

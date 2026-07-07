@@ -54,7 +54,7 @@ namespace Jobsity.StockChallenge.Bot
                 try
                 {
                     var stockSymbol = GetStockSymbol(Encoding.UTF8.GetString(args.Body.Span));
-                    var response = await _stockService.GetStockQuoteFromHistory(stockSymbol);
+                    var response = await _stockService.GetStockQuoteFromAlphaVantage(stockSymbol);
 
                     var properties = new BasicProperties
                     {
