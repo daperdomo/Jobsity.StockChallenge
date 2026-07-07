@@ -33,9 +33,10 @@ body {
 
 .chat-shell {
   display: grid;
-  grid-template-rows: auto minmax(360px, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  flex: 1 1 auto;
   gap: 1rem;
-  min-height: calc(100vh - 150px);
+  min-height: min(680px, calc(100vh - 180px));
 }
 
 .chat-header {
@@ -60,6 +61,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: .75rem;
+  min-height: 260px;
   overflow-y: auto;
   padding: 1rem;
   border: 1px solid #d0d5dd;
@@ -134,5 +136,18 @@ body {
 
   .chat-header {
     display: block;
+  }
+
+  .chat-shell {
+    gap: .75rem;
+    min-height: auto;
+  }
+
+  .chat-messages {
+    min-height: 320px;
+  }
+
+  .chat-composer .btn {
+    width: 100%;
   }
 }

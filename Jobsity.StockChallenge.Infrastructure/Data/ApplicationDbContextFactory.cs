@@ -8,10 +8,10 @@ namespace Jobsity.StockChallenge.Infrastructure.Data
         public ApplicationDbContext CreateDbContext(string[] args)
         {
             var connectionString = Environment.GetEnvironmentVariable("STOCK_CHALLENGE_CONNECTION")
-                ?? "Data Source=stock-challenge.db";
+                ?? "Server=(localdb)\\mssqllocaldb;Database=JobsityStockChallenge;Trusted_Connection=True;MultipleActiveResultSets=true";
 
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseSqlite(connectionString)
+                .UseSqlServer(connectionString)
                 .Options;
 
             return new ApplicationDbContext(options);
